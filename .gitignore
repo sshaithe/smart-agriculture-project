@@ -1,0 +1,26 @@
+# Python
+.idea/
+
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Flask
+instance/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# React / Node
+node_modules/
+dist/
+build/
+.env.local
+
+# VS Code / system
+.vscode/
+.DS_Store
+Thumbs.db
