@@ -4,13 +4,13 @@ import { predictionService } from "../api/PredictionService";
 
 const SEVERITY_STYLE = {
   Critical: "bg-red-600 text-white",
-  High:     "bg-orange-500 text-white",
-  Medium:   "bg-yellow-400 text-gray-900",
-  Low:      "bg-blue-400  text-white",
-  Info:     "bg-green-500 text-white",
+  High: "bg-orange-500 text-white",
+  Medium: "bg-yellow-400 text-gray-900",
+  Low: "bg-blue-400  text-white",
+  Info: "bg-green-500 text-white",
 };
 
-const InputField = ({ label, id, type = "number", step, value, onChange, placeholder }) => (
+const InputField = ({ label, id, type = "number", step, value, onChange, placeholder, hint }) => (
   <div className="flex flex-col gap-1">
     <label htmlFor={id} className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
       {label}
@@ -25,6 +25,7 @@ const InputField = ({ label, id, type = "number", step, value, onChange, placeho
       placeholder={placeholder}
       className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white shadow-sm"
     />
+    {hint && <span className="text-[10px] text-gray-400 mt-0.5">{hint}</span>}
   </div>
 );
 
@@ -92,15 +93,15 @@ const CropTab = () => {
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {[
-          ["Nitrogen (N)", "nitrogen"],
-          ["Phosphorus (P)", "phosphorus"],
-          ["Potassium (K)", "potassium"],
-          ["Temp (°C)", "temp_celsius"],
-          ["Humidity (%)", "humidity_percent"],
-          ["Soil pH", "soil_ph"],
-          ["Rainfall (mm)", "rainfall_mm"],
-        ].map(([label, id]) => (
-          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} />
+          ["Nitrogen (N)", "nitrogen", "Valid range: 0 - 300 ppm"],
+          ["Phosphorus (P)", "phosphorus", "Valid range: 0 - 100 ppm"],
+          ["Potassium (K)", "potassium", "Valid range: 0 - 300 ppm"],
+          ["Temp (°C)", "temp_celsius", "Valid range: -5 - 50 °C"],
+          ["Humidity (%)", "humidity_percent", "Valid range: 20 - 100 %"],
+          ["Soil pH", "soil_ph", "Valid range: 4.0 - 9.0"],
+          ["Rainfall (mm)", "rainfall_mm", "Valid range: 0 - 1000 mm"],
+        ].map(([label, id, hint]) => (
+          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} placeholder="Enter value" hint={hint} />
         ))}
       </div>
       <SpinnerBtn loading={loading} onClick={run} label="🌱 Recommend Crop" />
@@ -155,15 +156,15 @@ const CropTab = () => {
 
 
 const TURKISH_REGIONS = [
-  "Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya",
-  "Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur",
-  "Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne",
-  "Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane",
-  "Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu",
-  "Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya",
-  "Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu",
-  "Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat",
-  "Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak",
+  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya",
+  "Artvin", "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur",
+  "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne",
+  "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+  "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu",
+  "Kayseri", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya",
+  "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
+  "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
+  "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak",
 ];
 
 const CROPS = [
@@ -190,10 +191,10 @@ const YieldTab = () => {
     try {
       const payload = { ...form };
       // Convert numeric strings to floats where set
-      ["temperature_c","humidity_percent","rainfall_mm","wind_speed_ms",
-       "solar_radiation","soil_temp_0_7cm","soil_moisture_0_7cm"].forEach(
-        k => { if (payload[k]) payload[k] = parseFloat(payload[k]); else delete payload[k]; }
-      );
+      ["temperature_c", "humidity_percent", "rainfall_mm", "wind_speed_ms",
+        "solar_radiation", "soil_temp_0_7cm", "soil_moisture_0_7cm"].forEach(
+          k => { if (payload[k]) payload[k] = parseFloat(payload[k]); else delete payload[k]; }
+        );
       const res = await predictionService.predictYield(payload);
       setResult(res.data);
     } catch (e) {
@@ -227,15 +228,15 @@ const YieldTab = () => {
           </select>
         </div>
         {[
-          ["Temp (°C)","temperature_c"],
-          ["Humidity (%)","humidity_percent"],
-          ["Rainfall (mm)","rainfall_mm"],
-          ["Wind (m/s)","wind_speed_ms"],
-          ["Solar Radiation","solar_radiation"],
-          ["Soil Temp 0-7cm","soil_temp_0_7cm"],
-          ["Soil Moisture 0-7cm","soil_moisture_0_7cm"],
-        ].map(([label, id]) => (
-          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} placeholder="optional" />
+          ["Temp (°C)", "temperature_c", "Range: -30 to 60 °C"],
+          ["Humidity (%)", "humidity_percent", "Range: 0 to 100 %"],
+          ["Rainfall (mm)", "rainfall_mm", "Range: 0 to 2000 mm"],
+          ["Wind (m/s)", "wind_speed_ms", "Range: 0 to 100 m/s"],
+          ["Solar Radiation", "solar_radiation", "Range: 0 to 100 MJ/m²"],
+          ["Soil Temp 0-7cm", "soil_temp_0_7cm", "Range: -30 to 60 °C"],
+          ["Soil Moisture 0-7cm", "soil_moisture_0_7cm", "Range: 0 to 100 %"],
+        ].map(([label, id, hint]) => (
+          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} placeholder="optional" hint={hint} />
         ))}
       </div>
       <SpinnerBtn loading={loading} onClick={run} label="📊 Predict Yield" />
@@ -322,9 +323,8 @@ const DiseaseTab = () => {
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
-        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${
-          dragging ? "border-green-500 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-green-400"
-        }`}
+        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${dragging ? "border-green-500 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-green-400"
+          }`}
       >
         {preview ? (
           <div className="flex flex-col items-center gap-3">
@@ -350,23 +350,54 @@ const DiseaseTab = () => {
 
       {result && (
         <ResultCard color={result.is_healthy ? "green" : "red"}>
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 mb-4">
             <div className="text-4xl">{result.is_healthy ? "✅" : "🚨"}</div>
             <div className="flex-1">
               <p className="font-extrabold text-lg capitalize" style={{ color: result.is_healthy ? "#16a34a" : "#dc2626" }}>
                 {result.disease?.replace(/___|__/g, " — ").replace(/_/g, " ")}
               </p>
-              <p className="text-sm text-gray-500 mb-3">
+              <p className="text-sm text-gray-500 mb-2">
                 Confidence: <span className="font-bold">{Math.round(result.confidence * 100)}%</span>
               </p>
-              {!result.is_healthy && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                  <p className="font-semibold mb-1">💊 Treatment Advice</p>
-                  <p>{result.treatment}</p>
-                </div>
-              )}
+              {/* Confidence Bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                <div
+                  className="h-2.5 rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.round(result.confidence * 100)}%`,
+                    backgroundColor: result.confidence >= 0.8 ? "#16a34a" : result.confidence >= 0.5 ? "#eab308" : "#dc2626"
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400">
+                {result.confidence >= 0.8 ? "High confidence" : result.confidence >= 0.5 ? "Moderate confidence" : "Low confidence — consider re-uploading a clearer image"}
+              </p>
             </div>
           </div>
+
+          {/* Cause */}
+          {result.cause && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800 mb-3">
+              <p className="font-semibold mb-1">🔍 Cause</p>
+              <p>{result.cause}</p>
+            </div>
+          )}
+
+          {/* Treatment */}
+          {!result.is_healthy && result.treatment && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 mb-3">
+              <p className="font-semibold mb-1">💊 Treatment</p>
+              <p>{result.treatment}</p>
+            </div>
+          )}
+
+          {/* Prevention */}
+          {result.prevention && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
+              <p className="font-semibold mb-1">🛡️ Prevention</p>
+              <p>{result.prevention}</p>
+            </div>
+          )}
         </ResultCard>
       )}
     </div>
@@ -408,14 +439,14 @@ const RiskTab = () => {
       </p>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         {[
-          ["Temperature (°C)", "temperature_c"],
-          ["Humidity (%)", "humidity_percent"],
-          ["Rainfall (mm)", "rainfall_mm"],
-          ["Soil Moisture (0-7cm)", "soil_moisture_0_7cm"],
-          ["Wind Speed (m/s)", "wind_speed_ms"],
-          ["Solar Radiation (MJ/m²)", "solar_radiation_mj_m2_day"],
-        ].map(([label, id]) => (
-          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} />
+          ["Temperature (°C)", "temperature_c", "Range: -30 to 60 °C"],
+          ["Humidity (%)", "humidity_percent", "Range: 0 to 100 %"],
+          ["Rainfall (mm)", "rainfall_mm", "Range: 0 to 2000 mm"],
+          ["Soil Moisture (0-7cm)", "soil_moisture_0_7cm", "Range: 0 to 100 %"],
+          ["Wind Speed (m/s)", "wind_speed_ms", "Range: 0 to 100 m/s"],
+          ["Solar Radiation (MJ/m²)", "solar_radiation_mj_m2_day", "Range: 0 to 100 MJ/m²"],
+        ].map(([label, id, hint]) => (
+          <InputField key={id} label={label} id={id} value={form[id]} onChange={onChange} placeholder="Enter value" hint={hint} />
         ))}
       </div>
       <SpinnerBtn loading={loading} onClick={run} label="⚠️ Assess Risks" />
@@ -424,9 +455,8 @@ const RiskTab = () => {
       {result && (
         <div className="mt-6 space-y-3">
           {/* Summary Banner */}
-          <div className={`p-4 rounded-xl flex items-center gap-3 ${
-            result.all_clear ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"
-          }`}>
+          <div className={`p-4 rounded-xl flex items-center gap-3 ${result.all_clear ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"
+            }`}>
             <span className="text-3xl">{result.all_clear ? "🟢" : "🔴"}</span>
             <div>
               <p className="font-bold text-gray-700">
@@ -460,10 +490,10 @@ const RiskTab = () => {
 
 
 const TABS = [
-  { id: "crop",    label: "🌱 Crop Recommendation", Component: CropTab },
-  { id: "yield",   label: "📊 Yield Prediction",    Component: YieldTab },
-  { id: "disease", label: "🔬 Disease Detection",   Component: DiseaseTab },
-  { id: "risk",    label: "⚠️ Risk Assessment",    Component: RiskTab },
+  { id: "crop", label: "🌱 Crop Recommendation", Component: CropTab },
+  { id: "yield", label: "📊 Yield Prediction", Component: YieldTab },
+  { id: "disease", label: "🔬 Disease Detection", Component: DiseaseTab },
+  { id: "risk", label: "⚠️ Risk Assessment", Component: RiskTab },
 ];
 
 const Dashboard = () => {
@@ -488,11 +518,10 @@ const Dashboard = () => {
               key={tab.id}
               id={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-max px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                activeTab === tab.id
+              className={`flex-1 min-w-max px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
                   ? "bg-green-600 text-white shadow-md"
                   : "text-gray-500 hover:bg-gray-100"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
