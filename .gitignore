@@ -1,4 +1,13 @@
 # Python
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Environment secrets
+.env
+.env.local
+
 .idea/
 
 venv/
@@ -19,6 +28,12 @@ node_modules/
 dist/
 build/
 .env.local
+
+
+# Node packages
+node_modules/
+**/node_modules/
+
 
 # VS Code / system
 .vscode/
