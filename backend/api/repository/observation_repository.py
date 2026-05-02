@@ -19,3 +19,17 @@ class ObservationRepository:
         db.session.add(observation)
         db.session.commit()
         return observation
+
+    @staticmethod
+    def get_by_id(id):
+        return Observation.query.get(id)
+
+    @staticmethod
+    def update(observation):
+        db.session.commit()
+        return observation
+
+    @staticmethod
+    def delete(observation):
+        db.session.delete(observation)
+        db.session.commit()

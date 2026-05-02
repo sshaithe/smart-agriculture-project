@@ -70,7 +70,7 @@ const Service = () => {
           {regions.map((item) => (
             <RegionCard key={item.id} region={item} onClick={
                 () => {
-                  navigate(`/service/${item.id}`);
+                  navigate(`/regions/${item.id}`);
                 }
             } />
           ))}

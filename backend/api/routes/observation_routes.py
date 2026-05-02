@@ -18,8 +18,14 @@ def get_observation_by_city(city_id):
 
 @blueprint.post("/observation/add")
 def add_observation():
-    # 1. ADIM: Postman'den gelen JSON verisini yakala
     observation_data = request.get_json()
-
-    # 2. ADIM: Yakalanan veriyi Controller'a gönder
     return controller.add_observation(observation_data)
+
+@blueprint.put("/observation/<int:id>")
+def update_observation(id):
+    observation_data = request.get_json()
+    return controller.update_observation(id, observation_data)
+
+@blueprint.delete("/observation/<int:id>")
+def delete_observation(id):
+    return controller.delete_observation(id)
