@@ -80,7 +80,7 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <svg className="animate-spin h-8 w-8 text-green-600" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -97,7 +97,7 @@ const Profile = () => {
   predictions.forEach((p) => { if (statCounts[p.prediction_type] !== undefined) statCounts[p.prediction_type]++; });
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-transparent py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
 
         {/* ── Profile Card ──────────────────────────────────────── */}

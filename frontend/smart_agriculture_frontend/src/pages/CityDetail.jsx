@@ -78,7 +78,7 @@ const CityDetail = () => {
     );
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="p-8 bg-transparent min-h-screen">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-black text-gray-900 mb-2 uppercase tracking-tighter">
           Regional Analysis Report

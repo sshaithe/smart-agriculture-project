@@ -44,7 +44,7 @@ const Service = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-transparent p-4 md:p-8">
       {/* Header */}
       <header className="text-center mb-10">
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-2">

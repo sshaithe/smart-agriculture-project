@@ -315,7 +315,7 @@ const DiseaseTab = () => {
     <div>
       <p className="text-gray-500 text-sm mb-6">
         Upload a clear photo of a plant leaf. The AI will detect any disease and suggest treatment advice.
-        {" "}<span className="text-green-600 font-semibold">CNN model ready — 38 disease classes supported.</span>
+        {" "}<span className="text-green-600 font-semibold">CNN model ready 38 disease classes supported.</span>
       </p>
 
       {/* Drop Zone */}
@@ -501,13 +501,13 @@ const Dashboard = () => {
   const active = TABS.find((t) => t.id === activeTab);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-transparent py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900">🤖 AI Predictions Dashboard</h1>
           <p className="text-gray-500 mt-1">
-            Smart Agriculture intelligence — powered by trained ML models
+            Smart Agriculture intelligence powered by trained ML models
           </p>
         </div>
 
@@ -519,8 +519,8 @@ const Dashboard = () => {
               id={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 min-w-max px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
-                  ? "bg-green-600 text-white shadow-md"
-                  : "text-gray-500 hover:bg-gray-100"
+                ? "bg-green-600 text-white shadow-md"
+                : "text-gray-500 hover:bg-gray-100"
                 }`}
             >
               {tab.label}

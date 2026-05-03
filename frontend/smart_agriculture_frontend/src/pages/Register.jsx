@@ -3,7 +3,7 @@ import RegisterTemplate from '../components/atomic_design/template/RegisterTempl
 
 const Register = () => {
   return (
-    <section className="bg-gray-50 min-h-screen flex items-center justify-center">
+    <section className="bg-transparent min-h-screen flex items-center justify-center">
         <RegisterTemplate />
     </section>
   )

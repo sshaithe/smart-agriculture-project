@@ -19,7 +19,7 @@ const Icon = ({ path, className = "w-6 h-6" }) => (
 
 const Contact = () => {
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-transparent min-h-screen">
       <div className="container mx-auto px-4 py-16 md:py-24">
         <header className="text-center mb-12 md:mb-16">
           <Text

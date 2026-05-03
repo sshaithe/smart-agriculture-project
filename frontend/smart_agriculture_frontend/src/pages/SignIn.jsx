@@ -15,7 +15,7 @@ const SignIn = () => {
   };
 
   return (
-    <section className="bg-gray-50 min-h-screen flex items-center justify-center">
+    <section className="bg-transparent min-h-screen flex items-center justify-center">
       <LoginTemplate onClick={handleRegisterRedirect} />
     </section>
   );

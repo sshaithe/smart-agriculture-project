@@ -25,7 +25,7 @@ const sections = [
 
 const About = () => {
   return (
-    <div className="bg-white min-h-screen"> 
+    <div className="bg-transparent min-h-screen"> 
       <div className="container mx-auto px-4 py-16 md:py-24">
         
         <header className="text-center mb-16 md:mb-20">
