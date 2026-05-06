@@ -59,6 +59,17 @@ A comprehensive full-stack application that leverages Machine Learning to help f
    ```
    *(Or `npm start` depending on your setup)*
 
+## ✅ Testing
+
+1. Install test dependencies:
+   ```bash
+   pip install -r requirements-test.txt
+   ```
+2. Run the test suite:
+   ```bash
+   pytest
+   ```
+
 ## 🧠 Machine Learning Models
 The application relies on several trained models located in `model/models/`. 
 
