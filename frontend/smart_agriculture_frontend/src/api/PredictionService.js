@@ -21,15 +21,22 @@ export const predictionService = {
     return res.data;
   },
 
- 
-  predictDisease: async (imageFile) => {
-    const formData = new FormData();
-    formData.append("image", imageFile);
+
+  predictDisease: async (imageFileOrFormData) => {
+    // Accept either a raw File or a pre-built FormData (with plant_type etc.)
+    let formData;
+    if (imageFileOrFormData instanceof FormData) {
+      formData = imageFileOrFormData;
+    } else {
+      formData = new FormData();
+      formData.append("image", imageFileOrFormData);
+    }
     const res = await authAxios().post(`${BASE_URL}/prediction/disease`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return res.data;
   },
+
 
  
   assessRisk: async (data) => {

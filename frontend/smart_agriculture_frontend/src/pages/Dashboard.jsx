@@ -1,18 +1,120 @@
 import React, { useState } from "react";
 import { predictionService } from "../api/PredictionService";
+import { weatherService } from "../api/WeatherService";
+
+const TURKISH_REGIONS = [
+  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya",
+  "Artvin", "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur",
+  "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne",
+  "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
+  "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu",
+  "Kayseri", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya",
+  "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
+  "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
+  "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak",
+];
+
+/* ─── Shared Weather Auto-fill Button ──────────────────────────────────────── */
+/**
+ * Props:
+ *   onFill(weatherData) – called with the weather object when fetch succeeds
+ *   city               – optional city name to fetch by city instead of GPS
+ */
+const WeatherAutofill = ({ onFill, city }) => {
+  const [loading, setLoading] = useState(false);
+  const [badge, setBadge]     = useState(null);
+  const [err,   setErr]       = useState("");
+  const [selectedCity, setSelectedCity] = useState("auto"); // "auto" for GPS
+
+  const fetch = async () => {
+    setLoading(true); setErr(""); setBadge(null);
+    try {
+      let data;
+      const targetCity = city || (selectedCity !== "auto" ? selectedCity : null);
+      if (targetCity) {
+        data = await weatherService.getByCity(targetCity);
+      } else {
+        data = await weatherService.getFromBrowserLocation();
+      }
+      if (data.error) { setErr(data.error); return; }
+      onFill(data);
+      setBadge(data);
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mb-5">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+        {!city && (
+          <select 
+            value={selectedCity} 
+            onChange={(e) => setSelectedCity(e.target.value)}
+            className="border border-sky-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-sky-50/50 text-sky-800 shadow-sm transition-all"
+          >
+            <option value="auto">📍 Use Device GPS Location</option>
+            <optgroup label="Or select a Turkish City">
+              {TURKISH_REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+            </optgroup>
+          </select>
+        )}
+        <button
+          onClick={fetch}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 hover:from-sky-400 hover:to-blue-400 text-white text-sm font-bold transition-all duration-300 shadow-lg shadow-blue-400/20 hover:shadow-blue-300/40 hover:-translate-y-0.5 disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Fetching weather…
+            </>
+          ) : (
+            <>
+              <span>{selectedCity !== "auto" || city ? "🌍" : "📍"}</span>
+              {city ? `Auto-fill for ${city}` : (selectedCity === "auto" ? "Fetch via GPS" : `Auto-fill for ${selectedCity}`)}
+            </>
+          )}
+        </button>
+      </div>
+
+      {badge && (
+        <div className="fade-up mt-2 flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl bg-sky-50/80 border border-sky-200/60 backdrop-blur-sm text-sm">
+          <span className="text-sky-700 font-bold">🌤️ {badge.city}, {badge.country}</span>
+          <span className="text-gray-500">{badge.description}</span>
+          <span className="text-orange-600 font-semibold">🌡 {badge.temperature_c}°C</span>
+          <span className="text-blue-600 font-semibold">💧 {badge.humidity_percent}%</span>
+          {badge.rainfall_mm > 0 && <span className="text-blue-500 font-semibold">🌧 {badge.rainfall_mm} mm</span>}
+          <span className="text-gray-400 text-[10px] ml-auto">Fields auto-filled ✓</span>
+        </div>
+      )}
+
+      {err && (
+        <div className="fade-up mt-2 px-4 py-2.5 rounded-xl bg-red-50/80 border border-red-200/60 text-red-600 text-sm">
+          ⚠️ {err}
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 const SEVERITY_STYLE = {
-  Critical: "bg-red-600 text-white",
-  High: "bg-orange-500 text-white",
-  Medium: "bg-yellow-400 text-gray-900",
-  Low: "bg-blue-400  text-white",
-  Info: "bg-green-500 text-white",
+  Critical: "bg-gradient-to-r from-red-600 to-red-500 text-white shadow-red-500/30 shadow-lg",
+  High: "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-orange-400/30 shadow-lg",
+  Medium: "bg-gradient-to-r from-yellow-400 to-amber-400 text-gray-900 shadow-yellow-300/30 shadow-lg",
+  Low: "bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-blue-300/30 shadow-lg",
+  Info: "bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-green-400/30 shadow-lg",
 };
 
 const InputField = ({ label, id, type = "number", step, value, onChange, placeholder, hint }) => (
-  <div className="flex flex-col gap-1">
-    <label htmlFor={id} className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+  <div className="flex flex-col gap-1.5">
+    <label htmlFor={id} className="text-[11px] font-bold text-emerald-700/70 uppercase tracking-widest">
       {label}
     </label>
     <input
@@ -23,14 +125,14 @@ const InputField = ({ label, id, type = "number", step, value, onChange, placeho
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white shadow-sm"
+      className="premium-input rounded-xl px-4 py-2.5 text-sm bg-white/80 backdrop-blur-sm text-gray-800 placeholder-gray-400"
     />
     {hint && <span className="text-[10px] text-gray-400 mt-0.5">{hint}</span>}
   </div>
 );
 
 const ResultCard = ({ children, color = "green" }) => (
-  <div className={`mt-6 p-5 rounded-2xl border border-${color}-200 bg-${color}-50 shadow`}>
+  <div className={`fade-up mt-6 p-6 rounded-2xl border border-${color}-200/60 bg-gradient-to-br from-${color}-50/80 to-white shadow-xl shadow-${color}-100/40 backdrop-blur-sm`}>
     {children}
   </div>
 );
@@ -39,23 +141,25 @@ const SpinnerBtn = ({ loading, onClick, label }) => (
   <button
     onClick={onClick}
     disabled={loading}
-    className="w-full py-3 px-6 rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2"
+    className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 hover:from-emerald-500 hover:via-green-500 hover:to-teal-500 disabled:opacity-50 text-white font-bold text-sm transition-all duration-300 shadow-lg shadow-green-600/30 hover:shadow-green-500/50 hover:-translate-y-0.5 flex items-center justify-center gap-2"
   >
     {loading ? (
       <>
-        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
         </svg>
-        Running…
+        <span className="tracking-wide">Analyzing…</span>
       </>
-    ) : label}
+    ) : <span className="tracking-wide">{label}</span>}
   </button>
 );
 
 const ErrorAlert = ({ msg }) =>
   msg ? (
-    <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">⚠️ {msg}</div>
+    <div className="fade-up mt-4 p-4 rounded-xl bg-red-50/80 border border-red-200/60 text-red-700 text-sm backdrop-blur-sm flex items-center gap-2">
+      <span className="text-lg">⚠️</span> {msg}
+    </div>
   ) : null;
 
 
@@ -88,9 +192,21 @@ const CropTab = () => {
 
   return (
     <div>
-      <p className="text-gray-500 text-sm mb-6">
+      <p className="text-gray-500/80 text-sm mb-4 leading-relaxed">
         Enter soil NPK levels, temperature, humidity, pH and rainfall to get the best crop recommendation.
       </p>
+      <WeatherAutofill
+        onFill={(w) => setForm(f => ({
+          ...f,
+          temp_celsius:     String(w.temp_celsius ?? w.temperature_c ?? ""),
+          humidity_percent: String(w.humidity_percent ?? ""),
+          rainfall_mm:      String(w.rainfall_mm ?? ""),
+          nitrogen:         String(w.nitrogen ?? ""),
+          phosphorus:       String(w.phosphorus ?? ""),
+          potassium:        String(w.potassium ?? ""),
+          soil_ph:          String(w.soil_ph ?? ""),
+        }))}
+      />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {[
           ["Nitrogen (N)", "nitrogen", "Valid range: 0 - 300 ppm"],
@@ -154,19 +270,6 @@ const CropTab = () => {
 
 
 
-
-const TURKISH_REGIONS = [
-  "Adana", "Adıyaman", "Afyonkarahisar", "Ağrı", "Amasya", "Ankara", "Antalya",
-  "Artvin", "Aydın", "Balıkesir", "Bilecik", "Bingöl", "Bitlis", "Bolu", "Burdur",
-  "Bursa", "Çanakkale", "Çankırı", "Çorum", "Denizli", "Diyarbakır", "Edirne",
-  "Elazığ", "Erzincan", "Erzurum", "Eskişehir", "Gaziantep", "Giresun", "Gümüşhane",
-  "Hakkari", "Hatay", "Isparta", "Mersin", "İstanbul", "İzmir", "Kars", "Kastamonu",
-  "Kayseri", "Kırklareli", "Kırşehir", "Kocaeli", "Konya", "Kütahya", "Malatya",
-  "Manisa", "Kahramanmaraş", "Mardin", "Muğla", "Muş", "Nevşehir", "Niğde", "Ordu",
-  "Rize", "Sakarya", "Samsun", "Siirt", "Sinop", "Sivas", "Tekirdağ", "Tokat",
-  "Trabzon", "Tunceli", "Şanlıurfa", "Uşak", "Van", "Yozgat", "Zonguldak",
-];
-
 const CROPS = [
   "Wheat", "Barley", "Maize", "Chick peas", "Lentils",
   "Apples", "Grapes", "Hazelnuts", "Olives", "Sugar Beet",
@@ -209,9 +312,20 @@ const YieldTab = () => {
 
   return (
     <div>
-      <p className="text-gray-500 text-sm mb-6">
+      <p className="text-gray-500/80 text-sm mb-4 leading-relaxed">
         Select a Turkish region and crop, then provide current weather conditions to get a yield forecast (scored 1–10).
       </p>
+      <WeatherAutofill
+        city={form.region}
+        onFill={(w) => setForm(f => ({
+          ...f,
+          temperature_c:      String(w.temperature_c ?? ""),
+          humidity_percent:   String(w.humidity_percent ?? ""),
+          rainfall_mm:        String(w.rainfall_mm ?? ""),
+          wind_speed_ms:      String(w.wind_speed_ms ?? ""),
+          solar_radiation:    String(w.solar_radiation ?? ""),
+        }))}
+      />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Region</label>
@@ -282,6 +396,79 @@ const DiseaseTab = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [inputMode, setInputMode] = useState("upload"); // 'upload' or 'camera'
+  const [plantType, setPlantType] = useState("Auto");   // Plant-guided prediction
+
+  const PLANT_OPTIONS = [
+    "Auto", "Apple", "Bell Pepper", "Blueberry", "Cherry",
+    "Corn", "Grape", "Orange", "Peach", "Potato",
+    "Raspberry", "Soybean", "Squash", "Strawberry", "Tomato"
+  ];
+
+  // Camera states
+  const videoRef = React.useRef(null);
+  const canvasRef = React.useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setCameraActive(false);
+  };
+
+  const startCamera = async () => {
+    setError("");
+    setPreview(null);
+    setFile(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        setCameraActive(true);
+      }
+    } catch (err) {
+      console.error("Camera access denied", err);
+      setError("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const handleModeChange = (mode) => {
+    setInputMode(mode);
+    setPreview(null);
+    setFile(null);
+    setResult(null);
+    setError("");
+    if (mode === "camera") {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+  };
+
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const f = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
+          handleFile(f);
+          stopCamera();
+        }
+      }, "image/jpeg", 0.9);
+    }
+  };
 
   const handleFile = (f) => {
     setFile(f);
@@ -298,10 +485,14 @@ const DiseaseTab = () => {
   };
 
   const run = async () => {
-    if (!file) { setError("Please upload a leaf image first."); return; }
+    if (!file) { setError("Please provide a leaf image first."); return; }
     setLoading(true); setError(""); setResult(null);
     try {
-      const res = await predictionService.predictDisease(file);
+      const fd = new FormData();
+      fd.append("image", file);
+      // Send plant_type only when user explicitly chose one
+      if (plantType && plantType !== "Auto") fd.append("plant_type", plantType);
+      const res = await predictionService.predictDisease(fd);
       setResult(res.data);
     } catch (e) {
       const detail = e.response?.data?.error || e.message;
@@ -311,41 +502,134 @@ const DiseaseTab = () => {
     }
   };
 
+  React.useEffect(() => {
+    return () => stopCamera();
+  }, []);
+
   return (
     <div>
-      <p className="text-gray-500 text-sm mb-6">
-        Upload a clear photo of a plant leaf. The AI will detect any disease and suggest treatment advice.
-        {" "}<span className="text-green-600 font-semibold">CNN model ready 38 disease classes supported.</span>
+      <p className="text-gray-500/80 text-sm mb-6 leading-relaxed">
+        Provide a clear photo of a plant leaf using upload or camera.
+        {" "}<span className="text-emerald-600 font-bold">MobileNetV2 model • 38 disease classes • 95.9% accuracy</span>
       </p>
 
-      {/* Drop Zone */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer ${dragging ? "border-green-500 bg-green-50" : "border-gray-300 bg-gray-50 hover:border-green-400"
-          }`}
-      >
-        {preview ? (
-          <div className="flex flex-col items-center gap-3">
-            <img src={preview} alt="Leaf preview" className="max-h-48 rounded-xl shadow-md object-contain" />
-            <p className="text-xs text-gray-400">{file.name}</p>
-          </div>
-        ) : (
-          <>
-            <div className="text-5xl mb-3">🍃</div>
-            <p className="text-gray-500 text-sm">Drag & drop a leaf image here, or</p>
-          </>
-        )}
-        <label className="mt-3 inline-block cursor-pointer bg-white border border-gray-300 text-sm px-4 py-2 rounded-lg shadow-sm hover:bg-gray-50 transition-all">
-          Browse File
-          <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
+      {/* Plant Type Selector — Guided Prediction */}
+      <div className="mb-5">
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+          🌿 Select Plant Type <span className="text-emerald-600 font-bold">(Optional — improves accuracy!)</span>
         </label>
+        <div className="flex flex-wrap gap-2">
+          {PLANT_OPTIONS.map(p => (
+            <button
+              key={p}
+              onClick={() => setPlantType(p)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 border ${
+                plantType === p
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-400 shadow-lg shadow-emerald-200"
+                  : "bg-white text-gray-500 border-gray-200 hover:border-emerald-300 hover:text-emerald-600"
+              }`}
+            >
+              {p === "Auto" ? "🤖 Auto" : p}
+            </button>
+          ))}
+        </div>
+        {plantType !== "Auto" && (
+          <p className="mt-2 text-xs text-emerald-600 font-medium">
+            ✅ Guided mode: AI will only check <strong>{plantType}</strong> diseases.
+          </p>
+        )}
       </div>
 
-      <div className="mt-4">
-        <SpinnerBtn loading={loading} onClick={run} label="🔬 Detect Disease" />
+      {/* Mode Switcher */}
+      <div className="flex bg-gray-100/70 p-1 rounded-xl w-full max-w-sm mx-auto mb-6 backdrop-blur-sm border border-gray-200/50">
+        <button
+          onClick={() => handleModeChange("upload")}
+          className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${inputMode === "upload" ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-400/30" : "text-gray-500 hover:text-emerald-700"}`}
+        >
+          📁 Upload
+        </button>
+        <button
+          onClick={() => handleModeChange("camera")}
+          className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${inputMode === "camera" ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-400/30" : "text-gray-500 hover:text-emerald-700"}`}
+        >
+          📷 Camera
+        </button>
       </div>
+
+      {inputMode === "upload" && !preview && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 cursor-pointer ${dragging ? "border-emerald-400 bg-emerald-50/60 shadow-inner" : "border-gray-300/80 bg-gradient-to-br from-gray-50/80 to-white hover:border-emerald-400 hover:bg-emerald-50/30"
+            }`}
+        >
+          <div className="text-5xl mb-3 drop-shadow-sm">🍃</div>
+          <p className="text-gray-500 text-sm font-medium">Drag & drop a leaf image here, or</p>
+          <label className="mt-4 inline-block cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-green-600/20 hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all duration-300 font-bold">
+            Browse File
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files[0] && handleFile(e.target.files[0])} />
+          </label>
+        </div>
+      )}
+
+      {inputMode === "camera" && !preview && (
+        <div className="border border-emerald-500/30 bg-gradient-to-b from-gray-900 to-black rounded-2xl overflow-hidden relative min-h-[300px] flex items-center justify-center shadow-xl shadow-black/20">
+          <video
+            ref={videoRef}
+            className={`w-full max-h-[400px] object-cover ${cameraActive ? "block" : "hidden"}`}
+            playsInline
+            muted
+          />
+          <canvas ref={canvasRef} className="hidden" />
+          
+          {/* Scanning animation overlay */}
+          {cameraActive && <div className="absolute inset-0 scan-anim pointer-events-none"></div>}
+          
+          {!cameraActive && !error && (
+            <div className="text-center">
+              <div className="animate-pulse text-4xl mb-3">📷</div>
+              <p className="text-emerald-400/80 text-sm font-medium">Initializing camera...</p>
+            </div>
+          )}
+
+          {cameraActive && (
+            <button
+              onClick={captureImage}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-white to-gray-100 p-2 rounded-full shadow-2xl border-4 border-emerald-400/50 hover:scale-110 transition-all duration-300"
+            >
+              <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-rose-600 rounded-full border-3 border-white shadow-inner"></div>
+            </button>
+          )}
+        </div>
+      )}
+
+      {preview && (
+        <div className="border border-emerald-200/50 bg-gradient-to-br from-gray-50/80 to-emerald-50/30 rounded-2xl p-6 text-center mb-4 shadow-lg backdrop-blur-sm">
+          <img src={preview} alt="Leaf preview" className="max-h-64 mx-auto rounded-xl shadow-xl object-contain mb-4 ring-2 ring-emerald-200/40" />
+          {file && <p className="text-xs text-gray-400 mb-4 font-medium">{file.name}</p>}
+          <div className="flex gap-3 justify-center">
+             <button
+                onClick={() => {
+                   setPreview(null);
+                   setFile(null);
+                   if (inputMode === "camera") startCamera();
+                }}
+                className="py-2.5 px-6 rounded-xl bg-gray-200/80 hover:bg-gray-300 text-gray-700 font-bold text-sm transition-all shadow-sm backdrop-blur-sm"
+              >
+                ↩ Retake
+              </button>
+             <SpinnerBtn loading={loading} onClick={run} label="🔬 Analyze Leaf" />
+          </div>
+        </div>
+      )}
+
+      {!preview && inputMode === "upload" && (
+        <div className="mt-4">
+          <SpinnerBtn loading={loading} onClick={run} label="🔬 Detect Disease" />
+        </div>
+      )}
+
       <ErrorAlert msg={error} />
 
       {result && (
@@ -356,6 +640,12 @@ const DiseaseTab = () => {
               <p className="font-extrabold text-lg capitalize" style={{ color: result.is_healthy ? "#16a34a" : "#dc2626" }}>
                 {result.disease?.replace(/___|__/g, " — ").replace(/_/g, " ")}
               </p>
+              {/* Guided badge */}
+              {result.plant_guided && (
+                <span className="inline-block mt-1 mb-2 text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+                  🌿 Guided: {result.plant_type} mode
+                </span>
+              )}
               <p className="text-sm text-gray-500 mb-2">
                 Confidence: <span className="font-bold">{Math.round(result.confidence * 100)}%</span>
               </p>
@@ -434,9 +724,19 @@ const RiskTab = () => {
 
   return (
     <div>
-      <p className="text-gray-500 text-sm mb-6">
+      <p className="text-gray-500/80 text-sm mb-4 leading-relaxed">
         Enter current field conditions to detect heat stress, frost, drought, fungal risks and more.
       </p>
+      <WeatherAutofill
+        onFill={(w) => setForm(f => ({
+          ...f,
+          temperature_c:             String(w.temperature_c ?? ""),
+          humidity_percent:          String(w.humidity_percent ?? ""),
+          rainfall_mm:               String(w.rainfall_mm ?? ""),
+          wind_speed_ms:             String(w.wind_speed_ms ?? ""),
+          solar_radiation_mj_m2_day: String(w.solar_radiation ?? ""),
+        }))}
+      />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         {[
           ["Temperature (°C)", "temperature_c", "Range: -30 to 60 °C"],
@@ -490,10 +790,10 @@ const RiskTab = () => {
 
 
 const TABS = [
-  { id: "crop", label: "🌱 Crop Recommendation", Component: CropTab },
-  { id: "yield", label: "📊 Yield Prediction", Component: YieldTab },
-  { id: "disease", label: "🔬 Disease Detection", Component: DiseaseTab },
-  { id: "risk", label: "⚠️ Risk Assessment", Component: RiskTab },
+  { id: "crop",    icon: "🌱", label: "Crop Rec",          Component: CropTab },
+  { id: "yield",   icon: "📊", label: "Yield Predict",     Component: YieldTab },
+  { id: "disease", icon: "🔬", label: "Disease Detect",    Component: DiseaseTab },
+  { id: "risk",    icon: "⚠️",  label: "Risk Assessment",  Component: RiskTab },
 ];
 
 const Dashboard = () => {
@@ -501,35 +801,51 @@ const Dashboard = () => {
   const active = TABS.find((t) => t.id === activeTab);
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-4">
+    <div className="min-h-screen bg-transparent py-6 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">🤖 AI Predictions Dashboard</h1>
-          <p className="text-gray-500 mt-1">
-            Smart Agriculture intelligence powered by trained ML models
-          </p>
+
+        {/* ─── Premium Header ─── */}
+        <div className="relative mb-8 p-6 rounded-3xl bg-gradient-to-br from-[#0a1f14] via-[#0f2e1d] to-[#1a4a2e] overflow-hidden shadow-2xl">
+          {/* Decorative circles */}
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-teal-400/10 rounded-full blur-2xl"></div>
+          
+          <div className="relative z-10 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/30">
+              🌿
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold text-white tracking-tight">
+                AI Predictions <span className="text-emerald-400">Dashboard</span>
+              </h1>
+              <p className="text-emerald-300/60 text-sm font-medium mt-0.5">
+                Smart Agriculture intelligence • MobileNetV2 + Random Forest
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="flex flex-wrap gap-2 mb-6 p-1 bg-white rounded-2xl shadow-sm border border-gray-100">
+        {/* ─── Premium Tab Bar ─── */}
+        <div className="flex flex-wrap gap-2 mb-6 p-1.5 rounded-2xl glass-card shadow-lg">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               id={`tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-max px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
-                ? "bg-green-600 text-white shadow-md"
-                : "text-gray-500 hover:bg-gray-100"
-                }`}
+              className={`flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                activeTab === tab.id
+                  ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-green-600/30 tab-active"
+                  : "text-gray-500 hover:bg-white/60 hover:text-emerald-700"
+              }`}
             >
-              {tab.label}
+              <span>{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div className="bg-white rounded-2xl shadow border border-gray-100 p-6 md:p-8">
+        {/* ─── Tab Content ─── */}
+        <div className="glass-card rounded-2xl shadow-lg p-6 md:p-8">
           {active && <active.Component />}
         </div>
       </div>
@@ -538,3 +854,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+

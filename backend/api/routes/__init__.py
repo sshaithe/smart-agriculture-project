@@ -5,6 +5,7 @@ def register_blueprints(app):
     from api.routes.crop_routes import blueprint as crop_bp
     from api.routes.observation_routes import blueprint as observation_bp
     from api.routes.prediction_routes import blueprint as prediction_bp
+    from api.routes.weather_routes import blueprint as weather_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(city_bp, url_prefix="/api")
@@ -12,6 +13,7 @@ def register_blueprints(app):
     app.register_blueprint(crop_bp, url_prefix="/api")
     app.register_blueprint(observation_bp, url_prefix="/api")
     app.register_blueprint(prediction_bp, url_prefix="/api")
+    app.register_blueprint(weather_bp, url_prefix="/api")
 
 
     # başka blueprintlerin varsa buraya ekle:

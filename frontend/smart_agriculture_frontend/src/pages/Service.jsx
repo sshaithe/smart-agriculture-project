@@ -46,14 +46,17 @@ const Service = () => {
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-8">
       {/* Header */}
-      <header className="text-center mb-10">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-2">
-          Turkey Agricultural Regions Analysis
-        </h1>
-        <p className="text-lg text-gray-600">
-          Click on regions to view average climate values and optimal crop
-          recommendations.
-        </p>
+      <header className="relative mb-10 p-6 rounded-3xl bg-gradient-to-br from-[#0a1f14] via-[#0f2e1d] to-[#1a4a2e] overflow-hidden shadow-2xl">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-teal-400/10 rounded-full blur-2xl"></div>
+        <div className="relative z-10 text-center">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-2">
+            Turkey Agricultural <span className="text-emerald-400">Regions</span> Analysis
+          </h1>
+          <p className="text-emerald-300/60 text-sm font-medium">
+            Click on regions to view average climate values and optimal crop recommendations.
+          </p>
+        </div>
       </header>
 
       {/* 1. Map Area */}

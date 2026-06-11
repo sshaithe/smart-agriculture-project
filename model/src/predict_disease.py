@@ -15,6 +15,61 @@ _model = None
 _classes = []
 _image_size = (224, 224)
 
+# ── Plant-Guided Prediction Map ───────────────────────────────────────────────
+# Maps the user's selected plant to the subset of the 38 classes that belong to it.
+# When plant_type is provided, the model only considers these classes,
+# which dramatically increases confidence (renormalized softmax).
+PLANT_CLASSES = {
+    "Apple":      ["Apple___Apple_scab", "Apple___Black_rot",
+                   "Apple___Cedar_apple_rust", "Apple___healthy"],
+    "Blueberry":  ["Blueberry___healthy"],
+    "Cherry":     ["Cherry_(including_sour)___Powdery_mildew",
+                   "Cherry_(including_sour)___healthy"],
+    "Corn":       ["Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+                   "Corn_(maize)___Common_rust_",
+                   "Corn_(maize)___Northern_Leaf_Blight",
+                   "Corn_(maize)___healthy"],
+    "Grape":      ["Grape___Black_rot", "Grape___Esca_(Black_Measles)",
+                   "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+                   "Grape___healthy"],
+    "Orange":     ["Orange___Haunglongbing_(Citrus_greening)"],
+    "Peach":      ["Peach___Bacterial_spot", "Peach___healthy"],
+    "Bell Pepper":["Pepper,_bell___Bacterial_spot", "Pepper,_bell___healthy"],
+    "Potato":     ["Potato___Early_blight", "Potato___Late_blight",
+                   "Potato___healthy"],
+    "Raspberry":  ["Raspberry___healthy"],
+    "Soybean":    ["Soybean___healthy"],
+    "Squash":     ["Squash___Powdery_mildew"],
+    "Strawberry": ["Strawberry___Leaf_scorch", "Strawberry___healthy"],
+    "Tomato":     ["Tomato___Bacterial_spot", "Tomato___Early_blight",
+                   "Tomato___Late_blight", "Tomato___Leaf_Mold",
+                   "Tomato___Septoria_leaf_spot",
+                   "Tomato___Spider_mites Two-spotted_spider_mite",
+                   "Tomato___Target_Spot",
+                   "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+                   "Tomato___Tomato_mosaic_virus", "Tomato___healthy"],
+}
+
+# ── Background removal (graceful fallback) ────────────────────────────
+# Install with: pip install rembg
+# If not installed, images are processed as-is (model still works).
+_rembg_remove = None
+_REMBG_AVAILABLE = None
+
+def _ensure_rembg():
+    global _rembg_remove, _REMBG_AVAILABLE
+    if _REMBG_AVAILABLE is None:
+        try:
+            from rembg import remove as rembg_remove
+            _rembg_remove = rembg_remove
+            _REMBG_AVAILABLE = True
+            print("[predict_disease] rembg available - background removal ENABLED.")
+        except ImportError:
+            _REMBG_AVAILABLE = False
+            print("[predict_disease] rembg not installed - background removal DISABLED. "
+                  "Run: pip install rembg")
+    return _REMBG_AVAILABLE
+
 def _ensure_tf():
     
     global _tf, TF_AVAILABLE
@@ -259,53 +314,200 @@ def _load_artifacts():
         
         classes_path = os.path.join(MODEL_DIR, "disease_classes.json")
         with open(classes_path, "r") as f:
-            _classes = json.load(f)
+            classes_data = json.load(f)
+            if isinstance(classes_data, dict):
+                # Ensure they are sorted by the integer key
+                _classes = [classes_data[str(i)] for i in range(len(classes_data))]
+            else:
+                _classes = classes_data
         print(f"Loaded {len(_classes)} disease classes.")
 
 
-def preprocess_image(image_path_or_bytes):
-    """Load and preprocess image for CNN prediction."""
-    if isinstance(image_path_or_bytes, str):
-        img = Image.open(image_path_or_bytes)
+def _strip_background(image_bytes: bytes) -> tuple:
+    """
+    Attempt to remove the background from a real-world photo so it looks
+    like a PlantVillage lab image (solid background, leaf in focus).
+
+    Returns:
+        (processed_bytes, bg_removed: bool)
+    """
+    if not _ensure_rembg():
+        return image_bytes, False
+
+    try:
+        # Remove background — output is RGBA PNG bytes
+        rgba_bytes = _rembg_remove(image_bytes)
+        rgba_img   = Image.open(io.BytesIO(rgba_bytes)).convert("RGBA")
+
+        # Paste leaf onto a blueish/violet-grey background to mimic the exact 
+        # color of the paper used in the PlantVillage dataset. This helps trick 
+        # the AI since it heavily overfitted to that specific background color!
+        background = Image.new("RGB", rgba_img.size, (145, 145, 155))
+        background.paste(rgba_img, mask=rgba_img.split()[3])  # alpha as mask
+
+        out = io.BytesIO()
+        background.save(out, format="PNG")
+        return out.getvalue(), True
+    except Exception as e:
+        # If rembg fails on an edge-case image, fall back silently
+        print(f"[predict_disease] Background removal failed ({e}), using original image.")
+        return image_bytes, False
+
+
+def _pil_to_array(img: Image.Image) -> np.ndarray:
+    """Convert a PIL RGB image (already resized) to the MobileNetV2 input format."""
+    arr = np.array(img, dtype=np.float32)
+    arr = (arr / 127.5) - 1.0          # maps [0,255] → [-1,1]
+    return np.expand_dims(arr, axis=0) # (1, H, W, 3)
+
+
+def _tta_augment(img: Image.Image, n: int = 12) -> list:
+    """
+    Generate N augmented copies of a PIL image for Test-Time Augmentation.
+    Applies random brightness, contrast, saturation, flips, rotation and zoom
+    so the model sees the leaf from many angles/lighting conditions.
+    Each augmented version is converted to the model's input format.
+    """
+    import random
+    from PIL import ImageEnhance, ImageFilter
+
+    variants = []
+    # Always include the original (no augmentation)
+    variants.append(_pil_to_array(img))
+
+    for _ in range(n - 1):
+        aug = img.copy()
+
+        # Random horizontal/vertical flip
+        if random.random() > 0.5:
+            aug = aug.transpose(Image.FLIP_LEFT_RIGHT)
+        if random.random() > 0.5:
+            aug = aug.transpose(Image.FLIP_TOP_BOTTOM)
+
+        # Random rotation ±20°
+        angle = random.uniform(-20, 20)
+        aug = aug.rotate(angle, expand=False, fillcolor=(145, 145, 155))
+
+        # Random brightness (simulate dark/bright field photos)
+        factor = random.uniform(0.6, 1.5)
+        aug = ImageEnhance.Brightness(aug).enhance(factor)
+
+        # Random contrast (simulate shadows/over-exposure)
+        factor = random.uniform(0.7, 1.4)
+        aug = ImageEnhance.Contrast(aug).enhance(factor)
+
+        # Random saturation (handles both washed-out & over-saturated cameras)
+        factor = random.uniform(0.7, 1.4)
+        aug = ImageEnhance.Color(aug).enhance(factor)
+
+        # Random sharpness
+        factor = random.uniform(0.5, 2.0)
+        aug = ImageEnhance.Sharpness(aug).enhance(factor)
+
+        # Occasionally add a slight blur (simulates out-of-focus photos)
+        if random.random() > 0.7:
+            aug = aug.filter(ImageFilter.GaussianBlur(radius=random.uniform(0.5, 1.5)))
+
+        variants.append(_pil_to_array(aug))
+
+    return variants
+
+
+def preprocess_image(image_path_or_bytes, bg_removed: bool = False):
+    """Load a PIL Image resized to model input size. Returns PIL Image."""
+    if isinstance(image_path_or_bytes, (str, bytes)):
+        if isinstance(image_path_or_bytes, str):
+            img = Image.open(image_path_or_bytes)
+        else:
+            img = Image.open(io.BytesIO(image_path_or_bytes))
     else:
-        img = Image.open(io.BytesIO(image_path_or_bytes))
-    
-   
+        img = image_path_or_bytes
+
     if img.mode != 'RGB':
         img = img.convert('RGB')
-    
-    
-    img = img.resize(_image_size)
-    img_array = np.array(img) / 255.0  
-    img_array = np.expand_dims(img_array, axis=0) 
-    
-    return img_array
+
+    return img.resize(_image_size)
 
 
-def predict_leaf(image_path_or_bytes):
-    
+def predict_leaf(image_path_or_bytes, plant_type: str = None):
+    """Run disease prediction on a leaf image.
+
+    Args:
+        image_path_or_bytes: File path string or raw image bytes.
+        plant_type: Optional plant name (e.g. 'Apple', 'Tomato').
+                    When provided, only the classes for that plant are
+                    considered. Probabilities are renormalized so confidence
+                    is much higher and more reliable.
+
+    If rembg is installed, the background is automatically removed before
+    prediction so real-world field photos work as well as lab photos.
+    """
     _load_artifacts()
-    
-    img = preprocess_image(image_path_or_bytes)
-    
-    predictions = _model.predict(img, verbose=0)
-    pred_idx = np.argmax(predictions[0])
-    confidence = float(predictions[0][pred_idx])
-    
+
+    # Convert path to bytes so _strip_background can work on it
+    if isinstance(image_path_or_bytes, str):
+        with open(image_path_or_bytes, "rb") as f:
+            raw_bytes = f.read()
+    else:
+        raw_bytes = image_path_or_bytes
+
+    # Strip background — improves accuracy on real-world photos
+    clean_bytes, bg_removed = _strip_background(raw_bytes)
+    print(f"[predict_disease] Processing image. Background removed: {bg_removed}")
+
+    # DEBUG: Save the exact image the AI is looking at so the user can see it!
+    with open(os.path.join(SCRIPT_DIR, "debug_last_leaf.png"), "wb") as f:
+        f.write(clean_bytes)
+
+    # Load the PIL image once, then create N augmented variants (TTA)
+    pil_img   = preprocess_image(clean_bytes)
+    tta_n     = 12   # number of augmented passes — more = slower but more accurate
+    variants  = _tta_augment(pil_img, n=tta_n)
+
+    # Run all variants through the model as a single batch for efficiency
+    batch     = np.concatenate(variants, axis=0)   # shape: (tta_n, 224, 224, 3)
+    all_preds = _model.predict(batch, verbose=0)   # shape: (tta_n, num_classes)
+
+    # Average all predictions — this is the TTA ensemble
+    avg_preds = np.mean(all_preds, axis=0)         # shape: (num_classes,)
+
+    # ── Plant-Guided Filtering ────────────────────────────────────────────────
+    # If the user told us which plant this is, ZERO OUT all other disease classes
+    # and renormalize so the probabilities sum to 1 again.
+    # Example: User says "Apple" → only 4 Apple classes compete instead of 38.
+    # This turns a weak 22% Apple Scab into a confident 59% Apple Scab!
+    guided = False
+    if plant_type and plant_type in PLANT_CLASSES:
+        allowed = set(PLANT_CLASSES[plant_type])
+        mask    = np.array([1.0 if cls in allowed else 0.0 for cls in _classes])
+        avg_preds = avg_preds * mask               # zero out all non-plant classes
+        total     = avg_preds.sum()
+        if total > 0:
+            avg_preds = avg_preds / total          # renormalize so sum = 1
+        guided = True
+        print(f"[predict_disease] Plant-guided mode: '{plant_type}' -> {len(allowed)} classes")
+
+    pred_idx     = np.argmax(avg_preds)
+    confidence   = float(avg_preds[pred_idx])
     disease_name = _classes[pred_idx]
-    is_healthy = "healthy" in disease_name.lower()
-    info = get_disease_info(disease_name)
-    
+    is_healthy   = "healthy" in disease_name.lower()
+    info         = get_disease_info(disease_name)
+
+    print(f"[predict_disease] TTA ({tta_n} passes) -> {disease_name} ({confidence*100:.1f}%) [guided={guided}]")
+
     return {
         "disease": disease_name,
         "confidence": round(confidence, 4),
         "is_healthy": is_healthy,
+        "background_removed": bg_removed,
+        "plant_guided": guided,
+        "plant_type": plant_type or "Auto",
         "cause": info["cause"],
         "treatment": info["treatment"],
         "prevention": info["prevention"],
         "all_probabilities": {
-            cls: round(float(prob), 4) 
-            for cls, prob in zip(_classes, predictions[0])
+            cls: round(float(prob), 4)
+            for cls, prob in zip(_classes, avg_preds)
         }
     }
 

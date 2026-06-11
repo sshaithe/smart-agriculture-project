@@ -9,7 +9,7 @@ class PredictionRepository:
 
     @staticmethod
     def get_by_prediction_id(id: int):
-       
+
         return Prediction.query.get(id)
 
     @staticmethod

@@ -85,9 +85,10 @@ def predict_crop(nitrogen, phosphorus, potassium, temp_celsius,
     recommended_crop = _classes[pred_idx]
     
 
-    if confidence_val < 0.35 or temp_celsius < 5:
+    if confidence_val < 0.15 or temp_celsius < 5:
         recommended_crop = "Unsuitable Conditions"
-        errors.append("Warning: Conditions are too extreme (freezing, highly acidic, etc.) for any supported crop to thrive.")
+        # We don't append to errors here to avoid the "Unrealistic Inputs Clamped" UI message 
+        # when the inputs were actually perfectly valid but just produced a low-confidence prediction.
     
     return {
         "crop": recommended_crop,

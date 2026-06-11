@@ -9,7 +9,7 @@ const Footer = () => {
 
   return (
     // Arka planı koyu gri (bg-gray-900) ve gölgeyi belirginleştirdik
-    <footer className="w-full bg-gray-800 shadow-xl">
+    <footer className="w-full bg-gradient-to-r from-[#0a1f14] to-[#0f2517] shadow-xl">
       <div className="w-full max-w-screen-xl mx-auto px-4 py-6 md:py-8">
         
         {/* Üst Bölüm: Logo ve Navigasyon Bağlantıları */}
@@ -17,14 +17,8 @@ const Footer = () => {
           
           {/* Logo Alanı */}
           <a href="#" className="flex items-center gap-3 mb-4 sm:mb-0">
-            <img
-              alt="Flowbite Logo"
-              // Koyu arka planda daha iyi görünmesi için h-8 ve filtre uygulandı
-              className="h-8 filter brightness-150" 
-              src="https://flowbite.com/docs/images/logo.svg"
-            />
-            {/* Marka Adı: Vurgu rengi ve metin boyutu güncellendi */}
-            <span className="text-2xl font-extrabold whitespace-nowrap text-indigo-400">
+            <span className="text-3xl">🌿</span>
+            <span className="text-2xl font-extrabold whitespace-nowrap text-emerald-400">
               Smart
               <span className="text-white"> Agriculture</span>
             </span>
@@ -35,7 +29,7 @@ const Footer = () => {
             <li>
               <a 
                 href="#" 
-                className="hover:text-indigo-400 transition-colors duration-200"
+                className="hover:text-emerald-400 transition-colors duration-200"
               >
                 About
               </a>
@@ -43,7 +37,7 @@ const Footer = () => {
             <li>
               <a 
                 href="#" 
-                className="hover:text-indigo-400 transition-colors duration-200"
+                className="hover:text-emerald-400 transition-colors duration-200"
               >
                 Privacy Policy
               </a>
@@ -51,7 +45,7 @@ const Footer = () => {
             <li>
               <a 
                 href="#" 
-                className="hover:text-indigo-400 transition-colors duration-200"
+                className="hover:text-emerald-400 transition-colors duration-200"
               >
                 Licensing
               </a>
@@ -59,7 +53,7 @@ const Footer = () => {
             <li>
               <a 
                 href="#" 
-                className="hover:text-indigo-400 transition-colors duration-200"
+                className="hover:text-emerald-400 transition-colors duration-200"
               >
                 Contact
               </a>

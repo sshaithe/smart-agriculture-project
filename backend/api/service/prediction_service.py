@@ -71,9 +71,9 @@ class PredictionService:
         return predict_yield(region, crop, **kwargs)
 
     # ─── Disease Detection ────────────────────────────────────────
-    def predict_disease(self, image_bytes: bytes) -> dict:
+    def predict_disease(self, image_bytes: bytes, plant_type: str = None) -> dict:
         from model.src.predict_disease import predict_leaf
-        return predict_leaf(image_bytes)
+        return predict_leaf(image_bytes, plant_type=plant_type)
 
     # ─── Risk Assessment ──────────────────────────────────────────
     def assess_risk(self, data: dict) -> dict:

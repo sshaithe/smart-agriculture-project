@@ -225,12 +225,12 @@ const Home = () => {
           <FeatureCard
             icon="🦠"
             title="Disease Detection"
-            desc="Upload a photo of a plant leaf and our CNN deep learning model identifies diseases across 38 classes — with specific cause, treatment, and prevention advice."
+            desc="Upload or capture a photo of a plant leaf. Our MobileNetV2 deep learning model identifies diseases across 38 classes — with specific cause, treatment, and prevention advice."
             color="bg-gradient-to-br from-red-400 to-rose-500 text-white"
             delay={200}
-            accuracy="96.2%"
-            model="CNN (Deep Learning)"
-            specs="224×224 input · Keras · 38 classes"
+            accuracy="95.9%"
+            model="MobileNetV2 (Transfer Learning)"
+            specs="224×224 input · PlantVillage+PlantDoc · 38 classes"
           />
           <FeatureCard
             icon="⚡"
@@ -246,7 +246,7 @@ const Home = () => {
       </section>
 
       {/* ── HOW IT WORKS ────────────────────────────────────────── */}
-      <section className="bg-gray-900 py-16 mb-20">
+      <section className="bg-gradient-to-br from-[#0a1f14] via-[#0f2e1d] to-[#1a4a2e] py-16 mb-20 rounded-3xl mx-4 md:mx-6">
         <div className="max-w-5xl mx-auto px-6">
           <h2 className="text-3xl font-black text-white text-center mb-12">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

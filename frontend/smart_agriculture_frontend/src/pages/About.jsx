@@ -35,7 +35,7 @@ const About = () => {
           />
           <Text
             children="Pioneering the future of agriculture through technology and innovation."
-            className="text-xl text-indigo-600 max-w-4xl mx-auto font-medium"
+            className="text-xl text-emerald-600 max-w-4xl mx-auto font-medium"
           />
           <div className="mt-8">
           </div>
@@ -48,7 +48,7 @@ const About = () => {
               className="flex flex-col md:flex-row items-center gap-10 md:gap-16"
             >              <div
                 className={`w-full md:w-1/2 relative p-1 transition-all duration-500
-                  ${index % 2 !== 0 ? "md:order-2" : "shadow-2xl hover:shadow-indigo-500/30"}
+                  ${index % 2 !== 0 ? "md:order-2" : "shadow-2xl hover:shadow-emerald-500/30"}
                 `}
               >
                 <Image
@@ -57,7 +57,7 @@ const About = () => {
                   className="rounded-xl object-cover w-full h-96 transition-transform duration-500 hover:scale-[1.01]"
                 />
                 {index % 2 === 0 && (
-                  <div className="absolute top-0 left-0 w-full h-full border-4 border-indigo-200/50 rounded-xl transform translate-x-3 translate-y-3 -z-10 hidden md:block"></div>
+                  <div className="absolute top-0 left-0 w-full h-full border-4 border-emerald-200/50 rounded-xl transform translate-x-3 translate-y-3 -z-10 hidden md:block"></div>
                 )}
               </div>
               
@@ -66,16 +66,16 @@ const About = () => {
                   index % 2 !== 0 ? "md:order-1" : ""
                 } p-4`}
               >
-                <Text children={`0${index + 1}`} className="text-sm font-semibold uppercase text-indigo-400 mb-2 tracking-widest" />
+                <Text children={`0${index + 1}`} className="text-sm font-semibold uppercase text-emerald-500 mb-2 tracking-widest" />
                 
                 <h3 className="text-4xl font-bold text-gray-800 mb-5 leading-snug">
                   {section.title}
                 </h3>
-                <Text children={section.content} className="text-lg text-gray-600 leading-relaxed border-l-4 border-indigo-400 pl-4 py-1">
+                <Text children={section.content} className="text-lg text-gray-600 leading-relaxed border-l-4 border-emerald-500 pl-4 py-1">
                   
                 </Text>
                 
-                <Button children={"Discovery Us"} className="mt-6 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-300">
+                <Button children={"Discover More"} className="mt-6 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/40 hover:-translate-y-0.5 transition-all duration-300">
                 </Button>
               </div>
             </section>

@@ -113,15 +113,17 @@ class PredictionController:
 
    
     def predict_disease(self):
-        """Multipart: field 'image' = leaf image file."""
+        """Multipart: field 'image' = leaf image file, optional field 'plant_type'."""
         if "image" not in request.files:
             return {"error": "No image uploaded. Use field name 'image'."}, 400
         file        = request.files["image"]
         image_bytes = file.read()
+        # Optional plant_type sent as a form field alongside the image
+        plant_type  = request.form.get("plant_type", None) or None
         try:
-            result = self.prediction_service.predict_disease(image_bytes)
+            result = self.prediction_service.predict_disease(image_bytes, plant_type=plant_type)
             # Store only metadata (not raw bytes) in DB
-            self._save("disease", {"filename": file.filename}, result)
+            self._save("disease", {"filename": file.filename, "plant_type": plant_type}, result)
             return {"success": True, "data": result}, 200
         except FileNotFoundError as e:
             return {"error": "Disease model not trained yet. CNN is still training.",

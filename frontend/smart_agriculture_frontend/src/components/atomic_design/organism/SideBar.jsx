@@ -183,8 +183,8 @@ const SideBarLink = ({ to, icon, label, isActive, onClick }) => (
         className={`
           flex items-center p-2 text-base font-semibold rounded-lg transition-all duration-200 group
           ${isActive 
-            ? 'text-white bg-green-700 shadow-lg' 
-            : 'text-gray-200 hover:bg-gray-700 hover:text-white'
+            ? 'text-white bg-emerald-600/80 shadow-lg shadow-emerald-500/20' 
+            : 'text-gray-300 hover:bg-emerald-900/40 hover:text-white'
           }
         `}
       >
@@ -229,14 +229,14 @@ const SideBar = () => {
       className="fixed top-0 left-0 z-40 w-64 h-full transition-transform -translate-x-full sm:translate-x-0 shadow-2xl"
       aria-label="Sidebar"
     >
-      <div className="h-full flex flex-col bg-gray-700 border-r border-gray-700">
+      <div className="h-full flex flex-col bg-gradient-to-b from-[#0a1f14] via-[#0f2517] to-[#0a1a10] border-r border-emerald-900/30">
         
         {/* Üst Kısım: Logo ve Ana Menü Öğeleri (flex-grow ile tüm boş alanı kaplar) */}
         <div className="px-3 py-4 overflow-y-auto flex-grow">
           
           {/* Logo/Başlık kısmı */}
-          <div className="pb-4 mb-4 border-b border-gray-700">
-            <span className="text-2xl font-extrabold text-green-400">
+          <div className="pb-4 mb-4 border-b border-emerald-800/40">
+            <span className="text-2xl font-extrabold text-emerald-400">
               Smart 
               <span className="text-white"> Agriculture</span>
             </span>
@@ -288,7 +288,7 @@ const SideBar = () => {
         </div>
         
         {/* Alt Kısım: Auth area - dynamic based on login state */}
-        <div className="px-3 py-4 border-t border-gray-600 bg-gray-800/50">
+        <div className="px-3 py-4 border-t border-emerald-800/30 bg-black/20">
           {isLoggedIn ? (
             <>
               {/* User info mini */}
